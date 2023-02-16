@@ -1,0 +1,284 @@
+syntax = "proto3";
+
+// protoc .\log.proto --go_out=plugins=grpc:./
+package proto;
+option go_package = "../pb";
+
+// 基础通用头
+message CommonHeader {
+  bytes  dev_id = 1;  // 设备编号
+  uint64  session_id = 2;  // 会话编号
+  uint64  occur_time = 3;  // 发生时间
+  bytes  smac = 4;  // 源MAC
+  bytes  dmac = 5;  // 目的MAC
+  bytes  sipv4 = 6;  // 源IPV4
+  bytes  sipv6 = 7;  // 源IPV6
+  bytes  src_unit = 8;  // 来源区域
+  uint32  sport = 9;  // 源端口
+  bytes  dipv4 = 10;  // 目的IPV4
+  bytes  dipv6 = 11;  // 目的IPV6
+  bytes  dst_unit = 12;  // 目的区域
+  uint32  dport = 13;  // 目的端口
+  bytes  app_name = 14;  // 应用名称
+  uint64 gre_key = 15;   // gre隧道编号 --新增
+  uint32 vxlan_id = 16;  //vxlan编号 --新增
+  bytes src_tunnel_ip = 17; //源隧道 --新增
+  bytes dst_tunnel_ip = 18; //目的隧道 --新增
+}
+
+// HTTP通用头
+message CommonHttpHeader {
+  uint64  transaction_id = 1; // 事务编号
+  uint32  app_layer_protocol = 2; // 应用层协议
+  bytes  http_method = 3; // HTTP请求方法
+  bytes  http_req_host = 4; // HTTP请求HOST
+  bytes  http_req_path = 5; // HTTP请求路径
+  bytes  http_xff = 6; // HTTP请求端真实IP和代理
+  bytes  http_user_agent = 7; // HTTP用户代理
+  bytes  http_req_referer = 8; // HTTP引用来源
+  bytes  user_name = 9; // 用户名称
+  bytes  http_cookie = 10; // HTTP_COOKIE信息
+  message Labels {
+    bytes  label_type = 1; // 标签类型
+    bytes  label_name = 2; // 标签名称
+    uint32  label_source = 3; // 标签来源
+  }
+  repeated Labels labels = 11; // 标签列表
+  uint64  api_id = 12; // API编号
+  uint32 api_cate = 13; // API类型
+  uint64 api_hash = 14; // API哈希值
+  bytes  token = 15; // http令牌信息 --新增
+  bytes  client_type = 16; // 访问客户端
+}
+
+// 文件上传通用头
+message FileHeader {
+  uint32  file_direction = 1; // 文件传输方向
+  bytes  file_name = 2; // 文件名称
+  bytes  file_type = 3; // 文件类型
+  uint32  file_size = 4; // 文件大小
+  bytes  file_md5 = 5; // 文件MD5
+  uint32  file_id = 6; // 文件ID
+}
+
+// 访问日志
+message AccessLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  uint64  http_request_time = 3; // HTTP请求时间
+  uint64  http_response_time = 4; // HTTP响应时间
+  uint32  duration = 5; // 持续时间
+  bytes  http_req_params = 6; // HTTP请求参数
+  bytes  http_req_header = 7; // HTTP请求头
+  bytes  http_req_body = 8; // HTTP请求体
+  bytes  http_req_type = 9; // HTTP请求类型
+  uint32  http_status_code = 10; // HTTP状态代码
+  bytes  http_status_line = 11; // HTTP状态行
+  bytes  http_rsp_type = 12; // HTTP响应类型
+  uint32  http_req_header_size = 13; // HTTP请求头字节数
+  uint32  http_req_body_size = 14; // HTTP请求体字节数
+  uint32  http_rsp_header_size = 15; // HTTP响应头字节数
+  uint32  http_rsp_body_size = 16; // HTTP响应体字节数
+  uint32  policy_type = 17; // 策略类型
+  bytes  policy_name = 18; // 策略名称
+  uint32  action = 19; // 动作
+  uint32  rule_id = 20; // 规则id，不发送到平台
+  bytes  http_rsp_body = 21; // http 响应体，不发送到平台
+  bytes  http_rsp_header = 22; // http 响应头
+}
+
+// 管控日志
+message ControlLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  bytes  policy_name = 3;// 策略名称
+  uint32  policy_type = 4;// 策略类型
+  bytes  policy_object = 5;// 策略对象
+  uint32  action = 6;// 动作
+}
+
+// 威胁日志
+message ThreatLog {
+  CommonHeader common_header = 1; //
+  CommonHttpHeader common_http_header = 2; //
+  repeated  FileHeader file_header = 3; //
+  bytes  attacker_ip = 4; // 攻击者
+  bytes  victim_ip = 5; // 受害者
+  uint32  http_status_code = 6; // HTTP状态代码
+  bytes  http_req_header = 7; // HTTP请求头
+  bytes  http_req_body = 8; // HTTP请求体
+  bytes  http_rsp_header = 9; // HTTP响应头
+  bytes  http_rsp_body = 10; // HTTP响应体
+  uint64  threat_id = 11; // 威胁编号
+  bytes  threat_name = 12; // 威胁名称
+  uint32  cat_id = 13; // 分类ID
+  bytes  threat_cat = 14; // 威胁分类
+  uint32  severity = 15; // 危害等级
+  uint32  attack_result = 16; // 攻击结果
+  uint32  killchain = 17; // 攻击链阶段
+  bytes  tactics_stage = 18; // 战术阶段
+  bytes  tech_stage = 19; // 技术阶段
+  uint32  alert_count = 20; // 命中数量
+  uint32  detect_module = 21; // 检测模块
+  uint32  action = 22; // 动作
+  bytes  up_packet = 23;// 备用字段
+  bytes  down_packet = 24;// 备用字段
+  message HitSummary {
+    bytes  hit_type = 1; // 威胁情报类型
+    uint32  hit_offset = 2; // 高亮的偏移
+    uint32  hit_length = 3; // 高亮的长度
+    bytes  hit_content = 4; // 威胁情报的内容、密码的内容
+  } // 命中摘要
+  repeated  HitSummary hit_summary = 25;
+}
+
+// 敏感信息泄露日志
+message SensitiveLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  repeated  FileHeader file_header = 3;
+  message AlertInfo {
+    uint64  rule_id = 1; // 规则编号
+    bytes  rule_name = 2; // 标签名称
+    uint32  importance = 3; // 重要性
+    uint32  hit_total = 4; // 命中总数
+    message HitSummary {
+      uint32  hit_count = 1; // 命中数量
+      uint32  hit_position = 2; // 命中位置
+      repeated  bytes  hit_content = 3; // 命中内容
+      uint32  file_id = 4; // 文件ID
+      bytes  file_position = 5; // 文件位置
+    } // 命中信息
+    repeated  HitSummary hit_summary = 8;
+  }
+  repeated  AlertInfo alert_info = 4;
+  bytes  http_req_type = 5;          // HTTP请求类型
+  bytes  http_rsp_type = 6;          // HTTP响应类型
+  uint32  http_req_header_size = 7;  // HTTP请求头字节数
+  uint32  http_req_body_size = 8;    // HTTP请求体字节数
+  uint32  http_rsp_header_size = 9;  // HTTP响应头字节数
+  uint32  http_rsp_body_size = 10;   // HTTP响应体字节数
+  bytes  http_req_header = 11;       // HTTP请求头
+  bytes  http_req_body = 12;         // HTTP请求体
+  bytes  http_rsp_header = 13;       // HTTP响应头
+  bytes  http_rsp_body = 14;         // HTTP响应体
+  uint32  direction = 15;            // 方向
+  uint32  action = 16;               // 动作
+}
+
+// 登录行为日志
+message LoginBehaviorLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  uint32 auth_mode = 3; // 认证方式
+  bytes login_password = 4; // 登录密码
+  uint32 login_result = 5; // 登录结果
+}
+
+// 文件传输日志
+message FileUploadLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  FileHeader file_header = 3;
+}
+
+// 系统日志
+message SystemLog {
+  uint64 occur_time = 1; // 发生时间
+  uint32 module_type = 2; // 模块类型
+  uint32 log_level = 3; // 日志级别
+  bytes log_detail = 4; // 日志详情
+}
+
+// 操作日志
+message OperationLog {
+  uint64 occur_time = 1; // 发生时间
+  bytes admin_name = 2; // 管理员名称
+  uint32 login_mode = 3; // 登录方式
+  bytes login_ip = 4; // 登录IP
+  uint32 module_type = 5; // 模块类型
+  bytes log_detail = 6; // 日志详情
+}
+
+// 2.4 新增域名访问日志 message-type=11
+message DomainAccessLog {
+  CommonHeader common_header = 1;
+  int32 dns_type = 2; // DNS访问类型
+  int32 reply_code = 3; // DNS响应结果状态
+  bytes count = 4; // 统计次数
+  bytes host = 5; // 域名
+  repeated bytes addr = 6; // 地址
+  repeated bytes cname = 7; // 别名
+  repeated bytes mx = 8; // 邮件交换记录
+  repeated bytes txt = 9; // 域名的附加文本信息
+}
+
+message InterfaceStatistic {
+  bytes name = 1;
+  bytes  status = 2;
+  uint64 rx_count = 3;
+  uint64 tx_count = 4;
+  uint64 rx_bytes = 5;
+  uint64 tx_bytes = 6;
+}
+
+message StatisticsItem {
+  uint64 id = 1;
+  bytes name = 2;
+  bytes value = 3;
+  uint64 count = 4;
+}
+
+message CommonStatistic {
+  repeated StatisticsItem item = 1;
+}
+
+message StatisticsLog {
+  repeated InterfaceStatistic interface = 1;
+  CommonStatistic common = 2;
+}
+
+
+message DecryptLog {
+	CommonHeader common_header = 1;
+	bytes cert_name = 2;
+	bytes cert_md5 = 3;
+	bytes suite = 4;
+	bytes result = 5;
+}
+
+message VulnerabilityLog {
+  CommonHeader common_header = 1;
+  CommonHttpHeader common_http_header = 2;
+  uint64 rule_id = 3; // 规则编号
+  bytes rule_name = 4; // 规则名称
+  uint32 cat_id = 5; // 分类ID
+  bytes cat_name = 6; // 脆弱性类型
+  uint32 severity = 7; // 危害等级
+  bytes http_req_header = 8; // HTTP请求头
+  bytes http_req_body = 9; // HTTP请求体
+  bytes http_rsp_header = 10; // HTTP响应头
+  bytes http_rsp_body = 11; // HTTP响应体
+  message HitSummary {
+    bytes  hit_type = 1; // 脆弱类型
+    bytes  hit_content = 2; // 脆弱情报的内容
+  } // 命中摘要
+  repeated  HitSummary hit_summary = 12;
+}
+
+message SensorLog {
+  int32 message_type = 1;
+  AccessLog access_log = 2;
+  ControlLog control_log = 3;
+  ThreatLog threat_log = 4;
+  SensitiveLog sensitive_log = 5;
+  LoginBehaviorLog login_behavior_log = 6;
+  FileUploadLog file_upload_log = 7;
+  SystemLog system_log = 8;
+  OperationLog operation_log = 9;
+  StatisticsLog statistic_log = 10;
+  DomainAccessLog domain_access_log = 11;
+  DecryptLog decrypt_log = 12;
+  VulnerabilityLog vulnerability_log = 13;
+}
+
